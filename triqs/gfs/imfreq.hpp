@@ -33,7 +33,11 @@ namespace triqs { namespace gfs {
   typedef  linear_mesh<matsubara_domain<true>> B;
   static double m1(double beta) { return std::acos(-1)/beta;}
   gf_mesh() = default;
-  gf_mesh (double beta, statistic_enum S, size_t Nmax = 1025) : 
+  gf_mesh (typename B::domain_t const & d, int Nmax = 1025) : 
+   B(d, d.statistic==Fermion?m1(d.beta):0, d.statistic==Fermion?(2*Nmax+1)*m1(d.beta): 2*Nmax*m1(d.beta), Nmax, without_last){}
+  // use delegating...
+  gf_mesh (double beta, statistic_enum S, int Nmax = 1025) :
+   //gf_mesh({beta,S}, Nmax){} 
    B(typename B::domain_t(beta,S), S==Fermion?m1(beta):0, S==Fermion?(2*Nmax+1)*m1(beta): 2*Nmax*m1(beta), Nmax, without_last){}
  };
 
@@ -50,6 +54,8 @@ namespace triqs { namespace gfs {
   template<typename Opt, typename Target>
    struct evaluator<imfreq,Target,Opt> {
     static constexpr int arity = 1;
+     evaluator() = default;
+     evaluator(int n1, int n2){} 
     typedef typename std::conditional < std::is_same<Target, matrix_valued>::value, arrays::matrix_view<std::complex<double>>, std::complex<double>>::type rtype; 
     template<typename G>
      rtype operator() (G const * g, long n)  const {return g->data()(n, arrays::ellipsis()); }
@@ -66,45 +72,8 @@ namespace triqs { namespace gfs {
 
   // -------------------------------   Factories  --------------------------------------------------
 
-  // matrix_valued
-  template<typename Opt> struct factories<imfreq,matrix_valued,Opt> { 
-   typedef gf<imfreq,matrix_valued,Opt> gf_t;
-
-   template<typename MeshType>
-    static gf_t make_gf(MeshType && m, tqa::mini_vector<size_t,2> shape, local::tail_view const & t) {
-     typename gf_t::data_regular_t A(shape.front_append(m.size())); A() =0;
-     return gf_t ( std::forward<MeshType>(m), std::move(A), t, nothing() ) ;
-    }
-   static gf_t make_gf(double beta, statistic_enum S, tqa::mini_vector<size_t,2> shape) {
-    return make_gf(gf_mesh<imfreq,Opt>(beta,S), shape, local::tail(shape));
-   }
-   static gf_t make_gf(double beta, statistic_enum S,  tqa::mini_vector<size_t,2> shape, size_t Nmax) {
-    return make_gf(gf_mesh<imfreq,Opt>(beta,S,Nmax), shape, local::tail(shape));
-   }
-   static gf_t make_gf(double beta, statistic_enum S, tqa::mini_vector<size_t,2> shape, size_t Nmax, local::tail_view const & t) {
-    return make_gf(gf_mesh<imfreq,Opt>(beta,S,Nmax), shape, t);
-   }
-  };
-
-  // scalar_valued
-  template<typename Opt> struct factories<imfreq,scalar_valued,Opt> { 
-   typedef gf<imfreq,scalar_valued,Opt> gf_t;
-
-   template<typename MeshType>
-    static gf_t make_gf(MeshType && m, local::tail_view const & t) {
-     typename gf_t::data_regular_t A(m.size()); A() =0;
-     return gf_t ( std::forward<MeshType>(m), std::move(A), t, nothing() ) ;
-    }
-   static gf_t make_gf(double beta, statistic_enum S) {
-    return make_gf(gf_mesh<imfreq,Opt>(beta,S), local::tail(tqa::mini_vector<size_t,2> (1,1)));
-   }
-   static gf_t make_gf(double beta, statistic_enum S, size_t Nmax) {
-    return make_gf(gf_mesh<imfreq,Opt>(beta,S,Nmax), local::tail(tqa::mini_vector<size_t,2> (1,1)));
-   }
-   static gf_t make_gf(double beta, statistic_enum S, size_t Nmax, local::tail_view const & t) {
-    return make_gf(gf_mesh<imfreq,Opt>(beta,S,Nmax), t);
-   }
-  };
+  template<typename Opt> struct factories<imfreq,matrix_valued,Opt> : factories_one_var<imfreq,matrix_valued,Opt> {};
+  template<typename Opt> struct factories<imfreq,scalar_valued,Opt> : factories_one_var<imfreq,scalar_valued,Opt> {};
  } // gfs_implementation 
 
 }}

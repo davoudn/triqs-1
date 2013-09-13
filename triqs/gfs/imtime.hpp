@@ -34,7 +34,10 @@ namespace triqs { namespace gfs {
  template<typename Opt> struct gf_mesh<imtime,Opt> : linear_mesh<matsubara_domain<false>> {
   typedef linear_mesh<matsubara_domain<false>> B;
   gf_mesh() = default;
-  gf_mesh (double beta, statistic_enum S, size_t n_time_slices, mesh_kind mk=half_bins):
+  gf_mesh (typename B::domain_t d, int n_time_slices, mesh_kind mk=half_bins):
+   B( d, 0, d.beta, n_time_slices, mk){}
+   gf_mesh (double beta, statistic_enum S, int n_time_slices, mesh_kind mk=half_bins):
+   //gf_mesh( {beta,S}, n_time_slices, mk){}
    B( typename B::domain_t(beta,S), 0, beta, n_time_slices, mk){}
  };
 
@@ -56,11 +59,11 @@ namespace triqs { namespace gfs {
 
   template<typename Opt, typename Target>
    struct get_closest_point <imtime,Target,Opt> {
-    // index_t is size_t
+    // index_t is int
     template<typename G, typename T>
-     static size_t invoke(G const * g, closest_pt_wrap<T> const & p) {
+     static int invoke(G const * g, closest_pt_wrap<T> const & p) {
       double x = (g->mesh().kind()==half_bins ? double(p.value) :  double(p.value)+ 0.5*g->mesh().delta());
-      size_t n = std::floor(x/g->mesh().delta());
+      int n = std::floor(x/g->mesh().delta());
       return n;
      }
    };
@@ -77,7 +80,7 @@ namespace triqs { namespace gfs {
     double beta = g->mesh().domain().beta;
     int p = std::floor(tau/beta);
     tau -= p*beta;
-    size_t n; double w; bool in;
+    int n; double w; bool in;
     std::tie(in, n, w) = windowing(g->mesh(),tau);
     if (!in) TRIQS_RUNTIME_ERROR <<" Evaluation out of bounds";
     auto gg = on_mesh(*g);
@@ -101,7 +104,7 @@ namespace triqs { namespace gfs {
     public :
      static constexpr int arity = 1;
      evaluator() = default;
-     evaluator(size_t n1, size_t n2) : _tmp(n1,n2) {} // WHAT happen in resize ??
+     evaluator(int n1, int n2) : _tmp(n1,n2) {} // WHAT happen in resize ??
 
      template<typename G>
       arrays::matrix<double> const & operator()(G const * g, double tau) const { return evaluator_imtime_impl(g, tau, _tmp);}
@@ -123,38 +126,8 @@ namespace triqs { namespace gfs {
 
   // -------------------------------   Factories  --------------------------------------------------
 
-  // matrix_valued
-  template<typename Opt> struct factories<imtime,matrix_valued,Opt> { 
-   typedef gf<imtime,matrix_valued,Opt> gf_t;
-   template<typename MeshType>
-    static gf_t make_gf(MeshType && m, tqa::mini_vector<size_t,2> shape, local::tail_view const & t) {
-     typename gf_t::data_regular_t A(shape.front_append(m.size())); A() =0;
-     //return gf_t ( m, std::move(A), t, nothing() ) ;
-     return gf_t (std::forward<MeshType>(m), std::move(A), t, nothing(), evaluator<imtime,matrix_valued,Opt>(shape[0],shape[1]) ) ;
-    }
-   static gf_t make_gf(double beta, statistic_enum S,  tqa::mini_vector<size_t,2> shape, size_t Nmax=1025, mesh_kind mk= half_bins) {
-    return make_gf(gf_mesh<imtime,Opt>(beta,S,Nmax,mk), shape, local::tail(shape));
-   }
-   static gf_t make_gf(double beta, statistic_enum S, tqa::mini_vector<size_t,2> shape, size_t Nmax, mesh_kind mk, local::tail_view const & t) {
-    return make_gf(gf_mesh<imtime,Opt>(beta,S,Nmax,mk), shape, t);
-   }
-  };
-
-  // scalar_valued 
-  template<typename Opt> struct factories<imtime,scalar_valued,Opt> { 
-   typedef gf<imtime,scalar_valued,Opt> gf_t;
-   template<typename MeshType>
-    static gf_t make_gf(MeshType && m, local::tail_view const & t) {
-     typename gf_t::data_regular_t A(m.size()); A() =0;
-     return gf_t (std::forward<MeshType>(m), std::move(A), t, nothing());
-    }
-   static gf_t make_gf(double beta, statistic_enum S, size_t Nmax=1025, mesh_kind mk= half_bins) {
-    return make_gf(gf_mesh<imtime,Opt>(beta,S,Nmax,mk), local::tail(tqa::mini_vector<size_t,2> (1,1)));
-   }
-   static gf_t make_gf(double beta, statistic_enum S, size_t Nmax, mesh_kind mk, local::tail_view const & t) {
-    return make_gf(gf_mesh<imtime,Opt>(beta,S,Nmax,mk), t);
-   }
-  };
+  template<typename Opt> struct factories<imtime,matrix_valued,Opt> : factories_one_var<imtime,matrix_valued,Opt> {}; 
+  template<typename Opt> struct factories<imtime,scalar_valued,Opt> : factories_one_var<imtime,scalar_valued,Opt> {};
  } // gfs_implementation.
 
 }}

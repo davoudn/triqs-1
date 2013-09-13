@@ -30,9 +30,11 @@ namespace triqs { namespace gfs {
  struct block_index {};
 
  template<typename Opt> struct gf_mesh<block_index,Opt> : discrete_mesh<discrete_domain> {
+  typedef discrete_mesh<discrete_domain> B;
   gf_mesh() = default;
-  gf_mesh(size_t s) : discrete_mesh<discrete_domain>(s) {}
-  gf_mesh(discrete_domain const & d) : discrete_mesh<discrete_domain>(d) {}
+  gf_mesh(size_t s) : B(s) {}
+  gf_mesh(discrete_domain const & d) : B(d) {}
+  gf_mesh(std::initializer_list<std::string> const & s) : B(s){}
  };
 
  namespace gfs_implementation { 
@@ -70,67 +72,74 @@ namespace triqs { namespace gfs {
     typedef gf_mesh<block_index, Opt> mesh_t;
     typedef gf<block_index,Target> gf_t;
     typedef gf_view<block_index,Target> gf_view_t;
+    typedef std::initializer_list<Target> target_shape_t;
 
-    static gf_t make_gf(std::vector<Target> const & V)  { return gf_t ( mesh_t(V.size()), V,            nothing(), nothing() ) ; }
-    static gf_t make_gf(std::vector<Target> && V)       { return gf_t ( mesh_t(V.size()), std::move(V), nothing(), nothing() ) ; }
+    // target_shape here is a init list of gf : if {G} -> repeat the same GF
+    static typename gf_t::data_t make_data(mesh_t const & m, target_shape_t const & t_shape) { 
+     if ((t_shape.size() !=1) && (t_shape.size()!=m.size())) TRIQS_RUNTIME_ERROR<<" gf block construct size mismatch";
+     std::vector<Target> r; 
+     for (auto const & g : t_shape) r.push_back(g);
+     for (int i= t_shape.size(); i<m.size(); ++i) r.push_back(r[0]);
+     return r;
+    }
+
+    static typename gf_t::singularity_t       make_singularity (mesh_t const & m, target_shape_t) { return {};}
+    static evaluator<block_index, Target,Opt> make_evaluator   (mesh_t const & m, target_shape_t) { return {};}
+
+    /*
+    // OBSO
+    static gf_t make_gf(std::vector<Target> const & V)  { return gf_t (mesh_t(V.size()), V,            nothing(), nothing());}
+    static gf_t make_gf(std::vector<Target> && V)       { return gf_t (mesh_t(V.size()), std::move(V), nothing(), nothing());}
 
     static gf_t make_gf(std::vector<std::string> const & block_names, std::vector<Target> const & V) {
-     return gf_t(mesh_t(block_names), V, nothing(), nothing() );
+     return gf_t (mesh_t(block_names), V, nothing(), nothing());
     }
     static gf_t make_gf(std::vector<std::string> const & block_names, std::vector<Target> && V) {
-     return gf_t(mesh_t(block_names), std::move(V), nothing(), nothing() );
+     return gf_t (mesh_t(block_names), std::move(V), nothing(), nothing());
     }
 
-    /* static gf_t make_gf(std::initializer_list<Target> const & l) { 
-       auto v = std::vector<Target> {l};
-       return make_gf(v);
-       }
-       */
-    /* template<typename... Args>
-       static gf_t make_gf(size_t N, Args&& ...args)  {
-       std::vector<Target> V; V.reserve(N);
-       for (size_t i=0; i<N; ++i) V.push_back( Target::make_gf (std::forward<Args>(args...)));
-       return make_gf(V);
-       }
-       */
     static gf_t make_gf(int N, Target const & g)  {
      std::vector<Target> V; V.reserve(N);
-     for (size_t i=0; i<N; ++i)  V.push_back(g);
+     for (size_t i=0; i<N; ++i) V.push_back(g);
      return make_gf(V);
     }
 
     static gf_t make_gf(std::vector<std::string> const & block_names, Target const & g)  {
      std::vector<Target> V; V.reserve(block_names.size());
-     for (size_t i=0; i<block_names.size(); ++i)  V.push_back(g);
+     for (size_t i=0; i<block_names.size(); ++i) V.push_back(g);
      return make_gf(block_names,V);
     }
-
-    /*  template<typename... Args>
-	static gf_t make_gf(std::vector<std::string> const & block_names, Args&& ...args)  {
-	std::vector<Target> V; V.reserve(block_names.size());
-	for (size_t i=0; i<block_names.size(); ++i)  V.push_back( Target::make_gf (std::forward<Args>(args...)));
-	return make_gf(block_names,V);
-	}
-	*/
 
     template<typename GF>
      static gf_view_t make_gf_view(std::vector<GF> const & V) { return gf_view_t ( mesh_t(V.size()), V,            nothing(), nothing() ) ; }
     template<typename GF>
      static gf_view_t make_gf_view(std::vector<GF> && V)      { return gf_view_t ( mesh_t(V.size()), std::move(V), nothing(), nothing() ) ; }
-
+*/
    };
 
  } // gfs_implementation
 
  // -------------------------------   Free function   --------------------------------------------------
 
+ template<typename G0, typename ... G> 
+   gf_view<block_index, typename std::remove_reference<G0>::type::view_type> make_block_gf_view(G0 && g0, G && ... g) { 
+    auto V = std::vector<typename std::remove_reference<G0>::type::view_type>{std::forward<G0>(g0), std::forward<G>(g)...};
+    return { {V.size()}, std::move(V), nothing(), nothing() } ;
+    //return { gf_mesh<block_index, Opt> {V.size()}, std::move(V), nothing(), nothing() } ;
+   }
+
+ template<typename GF, typename GF2>
+  static gf_view<block_index,GF> make_block_gf_view_from_vector (std::vector<GF2> const & V) { return { {V.size()}, V,            nothing(), nothing()} ; }
+ template<typename GF, typename GF2>
+  static gf_view<block_index,GF> make_block_gf_view_from_vector (std::vector<GF2> && V)      { return { {V.size()}, std::move(V), nothing(), nothing()} ; }
+
  // a simple function to get the number of blocks
  template<typename T> size_t n_blocks (gf<block_index,T> const & g)      { return g.mesh().size();}
  template<typename T> size_t n_blocks (gf_view<block_index,T> const & g) { return g.mesh().size();}
 
-
- // template alias
- //template<typename T> using block_gf = gf<block_index, gf<T>>;
+#ifndef TRIQS_COMPILER_IS_OBSOLETE
+ template<typename T> using block_gf = gf<block_index, gf<T>>;
+#endif
 
  // experimental
  template<typename Target,  typename ... U>

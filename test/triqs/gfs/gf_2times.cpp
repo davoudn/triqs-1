@@ -1,29 +1,16 @@
-//#define TRIQS_ARRAYS_ENFORCE_BOUNDCHECK
-
+#define TRIQS_ARRAYS_ENFORCE_BOUNDCHECK
+#include <triqs/gfs.hpp> 
 #include <triqs/gfs/two_real_times.hpp> 
-
-//using namespace triqs::gfss::local;
 using namespace triqs::gfs;
-namespace tql= triqs::clef;
-//namespace tqa= triqs::arrays;
-using tqa::range;
-using triqs::arrays::make_shape;
-using triqs::arrays::array;
-
+using namespace triqs::arrays;
 #define TEST(X) std::cout << BOOST_PP_STRINGIZE((X)) << " ---> "<< (X) <<std::endl<<std::endl;
 
 int main() {
 
  try {
 
- //typedef gf<two_real_times> Gf_type;
- //typedef gf_view<two_real_times> Gf_view_type;
-
  auto G  = make_gf<two_real_times>( 10,100,make_shape(2,2));
  auto G2 = make_gf<two_real_times>( 10,100,make_shape(2,2));
-
- //Gf_type G   (two_real_times::mesh_t(10,100),make_shape(2,2));
- //Gf_type G2  (two_real_times::mesh_t(10,100),make_shape(2,2));
 
  triqs::clef::placeholder<0> t_;
  triqs::clef::placeholder<1> tp_;

@@ -69,6 +69,39 @@ namespace triqs { namespace gfs {
    template<typename DataType, typename GF> static void read (h5::group g, std::string const & s, DataType & data, GF const &) { h5_read(g,"data",data);}
   };
 
+  // factories for one variable gf
+  template<typename Var, typename Target, typename Opt, int target_dim=2> struct factories_one_var;
+
+  template<typename Var, typename Opt, int target_dim> struct factories_one_var<Var,matrix_valued,Opt,target_dim> { 
+   typedef gf<Var,matrix_valued,Opt> gf_t;
+   typedef tqa::mini_vector<size_t,target_dim> target_shape_t;
+   typedef typename gf_t::mesh_t mesh_t;
+
+   static typename gf_t::data_t make_data(mesh_t const & m, target_shape_t shape) { 
+    typename gf_t::data_t A(shape.front_append(m.size())); 
+    A() =0;
+    return A;
+   }
+
+   static typename gf_t::singularity_t make_singularity(mesh_t const & m, target_shape_t shape) { return shape; }
+   static evaluator<Var,matrix_valued,Opt> make_evaluator(mesh_t const & m, target_shape_t shape) { return {int(shape[0]),int(shape[1])}; }
+  };
+
+  template<typename Var, typename Opt> struct factories_one_var<Var,scalar_valued,Opt,2> { 
+   typedef gf<Var,scalar_valued,Opt> gf_t;
+   struct target_shape_t {};
+   typedef typename gf_t::mesh_t mesh_t;
+
+   static typename gf_t::data_t make_data(mesh_t const & m, target_shape_t shape) { 
+    typename gf_t::data_t A(m.size()); 
+    A() =0;
+    return A;
+   }
+   static typename gf_t::singularity_t make_singularity(mesh_t const & m, target_shape_t shape) { return typename gf_t::singularity_t {1,1} ; }
+   static evaluator<Var,scalar_valued,Opt> make_evaluator(mesh_t const & m, target_shape_t shape) { return {}; }
+
+  };
+
  } // gfs_implementation
 
  // make_gf and make_gf_view forward any args to them
@@ -171,8 +204,8 @@ namespace triqs { namespace gfs {
      typename boost::lazy_disable_if<  // disable the template if one the following conditions it true
      boost::mpl::or_< // starting condition [OR]
      clef::is_any_lazy<Arg0, Args...>                          // One of Args is a lazy expression
-      , boost::mpl::bool_<(sizeof...(Args)!= evaluator_t::arity -1 ) && (evaluator_t::arity !=-1)> // if -1 : no check
-      >,                                                       // end of OR
+     , boost::mpl::bool_<(sizeof...(Args)!= evaluator_t::arity -1 ) && (evaluator_t::arity !=-1)> // if -1 : no check
+     >,                                                       // end of OR
      std::result_of<evaluator_t(gf_impl*,Arg0, Args...)> // what is the result type of call
       >::type     // end of lazy_disable_if
       >::type // end of add_Const
@@ -215,7 +248,7 @@ namespace triqs { namespace gfs {
 
     template<typename Arg>
      typename clef::_result_of::make_expr_subscript<view_type,Arg>::type
-      operator[](Arg && arg) const { return clef::make_expr_subscript(view_type(*this),std::forward<Arg>(arg));}
+     operator[](Arg && arg) const { return clef::make_expr_subscript(view_type(*this),std::forward<Arg>(arg));}
 
     /// A direct access to the grid point
     template<typename... Args>
@@ -284,6 +317,7 @@ namespace triqs { namespace gfs {
  ///The regular class of GF
  template<typename Variable, typename Target, typename Opt> class gf : public gf_impl<Variable,Target,Opt,false> {
   typedef gf_impl<Variable,Target,Opt,false> B;
+  typedef gfs_implementation::factories<Variable,Target,Opt> factory;
   public :
 
   gf():B() {}
@@ -292,14 +326,30 @@ namespace triqs { namespace gfs {
   gf(gf_view<Variable,Target,Opt> const & g): B(g){}
   template<typename GfType> gf(GfType const & x): B() { *this = x;}
 
-  template<typename DataViewType> // anything from which the factory can make the data ...
-   gf(typename B::mesh_t const & m,
-     DataViewType && dat,
-     typename B::singularity_view_t const & si,
-     typename B::symmetry_t const & s ,
-     typename B::evaluator_t const & eval = typename B::evaluator_t ()
-     ) :
+  gf(typename B::mesh_t m,
+    typename B::data_t dat,
+    typename B::singularity_view_t const & si,
+    typename B::symmetry_t const & s ,
+    typename B::evaluator_t const & eval = typename B::evaluator_t ()
+    ) :
+   B(std::move(m),std::move(dat), si,s,eval) {}
+
+  /*template<typename DataViewType> // anything from which the factory can make the data ...
+    gf(typename B::mesh_t const & m,
+    DataViewType && dat,
+    typename B::singularity_view_t const & si,
+    typename B::symmetry_t const & s ,
+    typename B::evaluator_t const & eval = typename B::evaluator_t ()
+    ) :
     B(m,factory<typename B::data_t>(std::forward<DataViewType>(dat)),si,s,eval) {}
+    */
+
+  // ask the factory to build the elements of which gf is made 
+
+  typedef typename factory::target_shape_t target_shape_t;
+
+  gf(typename B::mesh_t m, target_shape_t shape = target_shape_t{} ):
+   B(std::move(m), factory::make_data(m,shape), factory::make_singularity(m,shape), typename B::symmetry_t {}, factory::make_evaluator(m,shape)) {} 
 
   friend void swap (gf & a, gf & b) noexcept { a.swap_impl (b);}
 

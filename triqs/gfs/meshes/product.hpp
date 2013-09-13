@@ -24,11 +24,12 @@
 #include "../domains/product.hpp"
 #include <triqs/utility/tuple_tools.hpp>
 #include <triqs/utility/mini_vector.hpp>
+#include <triqs/utility/c14.hpp>
 namespace triqs { namespace gfs {
 
  template<typename... Meshes> struct mesh_product : tag::composite {
    typedef domain_product<typename Meshes::domain_t ... >  domain_t;
-   typedef std::tuple<typename Meshes::index_t ... >       index_t;
+   typedef std::c14::tuple<typename Meshes::index_t ... >       index_t;
    typedef std::tuple<Meshes...>                           m_tuple_t;
    typedef std::tuple<typename Meshes::mesh_point_t ...>   m_pt_tuple_t;
    typedef typename domain_t::point_t                      domain_pt_t;

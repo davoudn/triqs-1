@@ -33,7 +33,7 @@ namespace triqs { namespace gfs {
  template<typename Opt> struct gf_mesh<retime,Opt> : linear_mesh<R_domain>  { 
   typedef linear_mesh<R_domain> B;
   gf_mesh() = default;
-  gf_mesh(double tmin, double tmax, size_t n_points, mesh_kind mk=full_bins) : B (typename B::domain_t(), tmin, tmax, n_points, mk){}
+  gf_mesh(double tmin, double tmax, int n_points, mesh_kind mk=full_bins) : B (typename B::domain_t(), tmin, tmax, n_points, mk){}
  };
 
  namespace gfs_implementation { 
@@ -49,11 +49,13 @@ namespace triqs { namespace gfs {
   template<typename Opt, typename Target>
    struct evaluator<retime,Target,Opt> {
     static constexpr int arity = 1;
-    //typedef typename std::conditional < std::is_same<Target, matrix_valued>::value, arrays::matrix_view<std::complex<double>>, std::complex<double>>::type rtype; 
+    evaluator() = default;
+     evaluator(int n1, int n2){} 
+     //typedef typename std::conditional < std::is_same<Target, matrix_valued>::value, arrays::matrix_view<std::complex<double>>, std::complex<double>>::type rtype; 
     typedef typename std::conditional < std::is_same<Target, matrix_valued>::value, arrays::matrix<std::complex<double>>, std::complex<double>>::type rtype; 
     template<typename G>
      rtype operator() (G const * g,double t0)  const {
-      size_t n; double w; bool in;
+      int n; double w; bool in;
       std::tie(in, n, w) = windowing(g->mesh(),t0);
       if (!in) TRIQS_RUNTIME_ERROR <<" Evaluation out of bounds";
       auto gg = on_mesh(*g);
@@ -69,51 +71,8 @@ namespace triqs { namespace gfs {
 
   // -------------------------------   Factories  --------------------------------------------------
 
-  //matrix_valued
-  template<typename Opt> struct factories<retime, matrix_valued,Opt> {
-   typedef gf<retime,matrix_valued> gf_t;
-
-   template<typename MeshType>
-    static gf_t make_gf(MeshType && m, tqa::mini_vector<size_t,2> shape, local::tail_view const t) {
-     typename gf_t::data_regular_t A(shape.front_append(m.size())); A() =0;
-     return gf_t ( std::forward<MeshType>(m), std::move(A), t, nothing() ) ;
-    }
-
-   static gf_t make_gf(double tmin, double tmax, size_t n_points, tqa::mini_vector<size_t,2> shape, mesh_kind mk) {
-    typename gf_t::data_regular_t A(shape.front_append(n_points)); A() =0;
-    return gf_t(gf_mesh<retime,Opt>(tmin, tmax, n_points,mk), std::move(A), local::tail(shape), nothing());
-   }
-
-   static gf_t make_gf(double tmin, double tmax, size_t n_points, tqa::mini_vector<size_t,2> shape) {
-    typename gf_t::data_regular_t A(shape.front_append(n_points)); A() =0;
-    return gf_t(gf_mesh<retime,Opt>(tmin, tmax, n_points), std::move(A), local::tail(shape), nothing());
-   }
-
-  };
-
-  //scalar_valued
-  template<typename Opt> struct factories<retime, scalar_valued,Opt> {
-   typedef gf<retime,scalar_valued> gf_t;
-
-   template<typename MeshType>
-    static gf_t make_gf(MeshType && m, local::tail_view const t) {
-     typename gf_t::data_regular_t A(m.size()); A() =0;
-     return gf_t ( std::forward<MeshType>(m), std::move(A), t, nothing() ) ;
-    }
-
-   static gf_t make_gf(double tmin, double tmax, size_t n_points, mesh_kind mk) {
-    typename gf_t::data_regular_t A(n_points); A() =0;
-    return gf_t(gf_mesh<retime,Opt>(tmin, tmax, n_points,mk), std::move(A), local::tail(tqa::mini_vector<size_t,2>(1,1)), nothing());
-   }
-
-   static gf_t make_gf(double tmin, double tmax, size_t n_points) {
-    typename gf_t::data_regular_t A(n_points); A() =0;
-    return gf_t(gf_mesh<retime,Opt>(tmin, tmax, n_points), std::move(A), local::tail(tqa::mini_vector<size_t,2>(1,1)), nothing());
-   }
-
-  };
-
-
+  template<typename Opt> struct factories<retime, matrix_valued,Opt>: factories_one_var<retime,matrix_valued,Opt> {};
+  template<typename Opt> struct factories<retime, scalar_valued,Opt>: factories_one_var<retime,scalar_valued,Opt> {};
  } // gfs_implementation
 }}
 #endif

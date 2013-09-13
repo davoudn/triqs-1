@@ -28,7 +28,7 @@ int main() {
  auto G_t_tau= make_gf<re_im_time, scalar_valued>(   tmin, tmax, n_re_time, beta, Fermion, n_im_time);
  auto G_w_wn = make_gf<re_im_freq, scalar_valued>(   wmin, wmax, n_re_freq, beta, Fermion, n_im_freq);
  auto G_w_tau= make_gf<refreq_imtime, scalar_valued>(wmin, wmax, n_re_freq, beta, Fermion, n_im_time);
- auto G_w= make_gf<refreq, scalar_valued>(wmin, wmax, n_re_freq);
+ auto G_w= gf<refreq, scalar_valued>{{wmin, wmax, n_re_freq}};
  
  triqs::clef::placeholder<0> w_;
  triqs::clef::placeholder<1> wn_;

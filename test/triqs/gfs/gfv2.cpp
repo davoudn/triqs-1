@@ -1,19 +1,9 @@
-//#define TRIQS_ARRAYS_ENFORCE_BOUNDCHECK
-
-#include <triqs/gfs/imfreq.hpp> 
-#include <triqs/gfs/imtime.hpp> 
-#include <triqs/gfs/local/functions.hpp> 
-
-namespace tql= triqs::clef;
-namespace tqa= triqs::arrays;
-using tqa::range;
-using triqs::arrays::make_shape;
-using triqs::gfs::Fermion;
-using triqs::gfs::imfreq;
-using triqs::gfs::imtime;
-using triqs::gfs::make_gf;
-
+#define TRIQS_ARRAYS_ENFORCE_BOUNDCHECK
+#include <triqs/gfs.hpp> 
+using namespace triqs::gfs;
+using namespace triqs::arrays;
 #define TEST(X) std::cout << BOOST_PP_STRINGIZE((X)) << " ---> "<< (X) <<std::endl<<std::endl;
+#include <triqs/gfs/local/functions.hpp> 
 
  // example 
  //template<typename T> using block_gf = gf<block_index, gf<T>>;
@@ -26,10 +16,13 @@ int main() {
  triqs::gfs::freq_infty inf;
 
  double beta =1;
- auto G =  make_gf<imfreq> (beta, Fermion, make_shape(2,2));
- auto Gc = make_gf<imfreq> (beta, Fermion, make_shape(2,2));
- auto G3 = make_gf<imfreq> (beta, Fermion, make_shape(2,2));
- auto Gt = make_gf<imtime> (beta, Fermion, make_shape(2,2));
+ //auto G =  make_gf<imfreq> (beta, Fermion, make_shape(2,2));
+ 
+ //auto G =  gf<imfreq>{ {beta, Fermion}, make_shape(2,2) };
+ auto G =  gf<imfreq>{ {beta, Fermion}, {2,2} };
+ auto Gc = gf<imfreq>{ {beta, Fermion}, {2,2} };
+ auto G3 = gf<imfreq>{ {beta, Fermion}, {2,2} };
+ auto Gt = gf<imtime>{ {beta, Fermion}, {2,2} };
 
  auto Gv = G();
  TEST( G( 0) ) ;
@@ -47,10 +40,10 @@ int main() {
  triqs::clef::placeholder<0> om_;
 
  TEST( G(om_) ) ;
- TEST( tql::eval(G(om_), om_=0) ) ;
+ TEST( eval(G(om_), om_=0) ) ;
 
  TEST( Gv(om_) ) ;
- TEST( tql::eval(Gv(om_), om_=0) ) ;
+ TEST( eval(Gv(om_), om_=0) ) ;
 
  std::cout  <<"-------------lazy assign 1 ------------------"<<std::endl;
 
@@ -69,7 +62,7 @@ int main() {
  std::cout  <<"-----------------   3 --------------------"<<std::endl;
 
  TEST( Gv(om_) ) ;
- TEST( tql::eval(Gv(om_), om_=0) ) ;
+ TEST( eval(Gv(om_), om_=0) ) ;
 
  // tail 
  BOOST_AUTO( t, G(inf));

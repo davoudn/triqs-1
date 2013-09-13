@@ -26,8 +26,8 @@ try {
  triqs::clef::placeholder<1> wn_;
  triqs::clef::placeholder<2> tau_;
    
- auto G_w_wn =  make_gf<cartesian_product<refreq,refreq>, scalar_valued>( gf_mesh<refreq>(wmin, wmax, n_re_freq), gf_mesh<refreq>(wmin, wmax, n_re_freq));
- auto G_w_tau = make_gf<cartesian_product<refreq,retime>, scalar_valued>( gf_mesh<refreq>(wmin, wmax, n_re_freq), gf_mesh<retime>(-tmax, tmax, Nt));
+ auto G_w_wn =  gf<cartesian_product<refreq,refreq>, scalar_valued>( {gf_mesh<refreq>(wmin, wmax, n_re_freq), gf_mesh<refreq>(wmin, wmax, n_re_freq)});
+ auto G_w_tau = gf<cartesian_product<refreq,retime>, scalar_valued>( {gf_mesh<refreq>(wmin, wmax, n_re_freq), gf_mesh<retime>(-tmax, tmax, Nt)});
 
  G_w_wn(w_,wn_)<<1/(wn_-1)/( pow(w_,3) );
  G_w_tau(w_,tau_)<< exp( -2*tau_ ) / (w_*w_ + 1 );

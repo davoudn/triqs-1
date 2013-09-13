@@ -158,8 +158,9 @@ namespace triqs { namespace gfs {
   // -------------------------------   Factories  --------------------------------------------------
 
   template<typename Opt, typename ... Ms>
-   struct factories<cartesian_product<Ms...>, scalar_valued,Opt> {
-    typedef gf<cartesian_product<Ms...>, scalar_valued,Opt> gf_t;
+   struct factories<cartesian_product<Ms...>, scalar_valued,Opt> : factories_one_var< cartesian_product<Ms...>, scalar_valued,Opt> {};
+
+  /*  typedef gf<cartesian_product<Ms...>, scalar_valued,Opt> gf_t;
 
     template<typename ... Meshes>
      static gf_t make_gf(Meshes && ... meshes) { 
@@ -168,7 +169,7 @@ namespace triqs { namespace gfs {
       A() =0;
       return gf_t (m, std::move(A), nothing(), nothing());
      }
-   };
+*/
 
  } // gf_implementation
 

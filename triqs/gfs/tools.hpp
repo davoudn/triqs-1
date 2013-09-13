@@ -72,7 +72,7 @@ namespace triqs { namespace gfs {
  //------------------------------------------------------
 
  struct nothing {
-  template<typename... Args> explicit nothing(Args...) {} // takes anything, do nothing..
+  template<typename... Args> explicit nothing(Args&&...) {} // takes anything, do nothing..
   nothing() {}
   typedef nothing view_type;
   typedef nothing regular_type;
