@@ -59,7 +59,7 @@ Specializations
 -------------------
 
 +-----------------+------------------+--------------------+----------------------------+
-| Variable\Target | matrix_valued    | scalar_valued      | G (another Green function) |
+| Variable/Target | matrix_valued    | scalar_valued      | G (another Green function) |
 +=================+==================+====================+============================+
 | imfreq          | :doc:`gf_imfreq` | :doc:`gf_imfreq_s` |                            |
 +-----------------+------------------+--------------------+----------------------------+
@@ -84,30 +84,87 @@ Specializations
    gf_block
    gf_prod
 
-Construction/factories
--------------------------------
 
-gf/gf_view have very basic constructors : 
-default, copy, move, and one constructor from the data used by the functions (reserved for advanced users).
+Member types 
+--------------------------------------
 
-Various specializations however provides several factories, adapted to each case, of the form ::
-
-  auto g= make_gf<Variable, Target, Opt> ( ....) ;
-
-This is the recommended way to construct `gf` objects.
-Cf examples in various specializations.
-
-
-Member types
------------------
-
-
++----------------+-------------------------------------------------------------+
+| Member type    | Definitions                                                 |
++================+=============================================================+
+| view_type      | The corresponding view type                                 |
++----------------+-------------------------------------------------------------+
+| regular_type   | The corresponding regular type i.e. the container itself    |
++----------------+-------------------------------------------------------------+
+| mesh_t         | The mesh                                                    |
++----------------+-------------------------------------------------------------+
+| target_shape_t | Type storing the information to construct the target space, |
+|                | Depends on the specialisation (a shape for matrix_valued    |
+|                | gf, empty for a scalar valued, ... Cf Specialisations)      |
++----------------+-------------------------------------------------------------+
+| data_t         | Type of the data array                                      |
++----------------+-------------------------------------------------------------+
+| singularity_t  | Type of the singularity (tail, nothing...)                  |
++----------------+-------------------------------------------------------------+
+| symmetry_t     | Symmetry (unused at this stage).                            |
++----------------+-------------------------------------------------------------+
 
 Member functions
 ---------------------
 
++-------------------------------------------+------------------------------------------+
+| Member function                           | Meaning                                  |
++===========================================+==========================================+
+| :ref:`(constructor)<gf_constr>`           |                                          |
++-------------------------------------------+------------------------------------------+
+| (destructor)                              |                                          |
++-------------------------------------------+------------------------------------------+
+| :ref:`operator ()<gf_call>`               | Evaluation on a point of the domain      |
++-------------------------------------------+------------------------------------------+
+| :ref:`operator []<gf_subscript>`          | Access to the value on the mesh          |
++-------------------------------------------+------------------------------------------+
+| :ref:`mesh<gf_data>`                      | Access to the mesh                       |
++-------------------------------------------+------------------------------------------+
+| :ref:`singularity<gf_data>`               | Access to the singularity                |
++-------------------------------------------+------------------------------------------+
+| :ref:`symmetry<gf_data>`                  | Access to the symmetry                   |
++-------------------------------------------+------------------------------------------+
+| :ref:`data<gf_data>`                      | Direct view of the data [Advanced]       |
++-------------------------------------------+------------------------------------------+
+| :ref:`operator =<gf_reg_assign>`          | Assigns values to the container          |
++-------------------------------------------+------------------------------------------+
+| :ref:`operator +=,-=,*=,/=<gf_comp_ops>`  | compound assignment operators            |
++-------------------------------------------+------------------------------------------+
+
+
+.. toctree::
+
+  :hidden:
+
+   gf_constructors
+   gf_data
+   gf_assign
+   gf_call
+   gf_subcript
+   compound_ops
+   call 
+   resize
+   STL 
 
 Non-member functions
 ------------------------
 
 
++---------------------------------+-------------------------------------------+
+| Member function                 | Meaning                                   |
++=================================+===========================================+
+| :ref:`swap<gf_swap>`            | Swap of 2 containers                      |
++---------------------------------+-------------------------------------------+
+| :ref:`operator\<\<<gf_stream>`  | Writing to stream                         |
++---------------------------------+-------------------------------------------+
+
+
+.. toctree::
+   :hidden:
+
+   stream
+   swap

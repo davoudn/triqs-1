@@ -71,8 +71,7 @@ An alternative declaration with an explicit construction of the underlying mesh:
      double beta=10;
      int Nfreq =100;
      
-     auto GF  = make_gf<imfreq,scalar_valued>(gf_mesh<imfreq>{beta,Fermion,Nfreq});
-     // auto GF2 = make_gf<imfreq,scalar_valued>({beta,Fermion,Nfreq});
+     auto GF = gf<imfreq,scalar_valued>{ {beta,Fermion,Nfreq} };
     }
 
 

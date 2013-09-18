@@ -40,18 +40,29 @@ HDF5 storage convention
 Examples
 ---------
 
-.. compileblock:: 
+.. compileblock::
 
-    #include <triqs/gfs/imtime.hpp>
-    using namespace triqs::gfs;
+    #include <triqs/gfs.hpp>
+    using namespace triqs::gfs; using triqs::clef::placeholder;
+    int main(){
+     double beta=10, a = 1;
+     int n_times=5;
 
-    int main() {
-      double beta=1; //inverse temperature
-      triqs::gfs::statistic_enum stat=triqs::gfs::Fermion;
-      size_t n_times=5;
-      auto shape = triqs::arrays::make_shape(1,1);
-      auto GF=make_gf<imtime>(beta, stat, shape, n_times);  
-    };
+     // First give information to build the mesh, second to build the target
+     auto GF1  = gf<imtime> { {beta,Fermion,n_times}, {1,1} };
+     // or a more verbose/explicit form ...
+     auto GF2  = gf<imtime> { gf_mesh<imtime>{beta,Fermion,n_times}, make_shape(1,1) };
+ 
+     // Filling the gf with something...
+     placeholder<0> tau_;
+     GF1(tau_) << exp ( - a * tau_) / (1 + exp(- beta * a));
+
+     // evaluation at n=3
+     std::cout << GF1(3) << " == "<<   exp ( - a * 3) / (1 + exp(- beta * a)) << std::endl;
+     // the high frequency expansion was automatically computed.
+     std::cout << GF1.singularity() << std::endl;
+    }
+
 
 
 
