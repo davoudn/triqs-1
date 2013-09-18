@@ -346,18 +346,6 @@ namespace triqs { namespace gfs {
     ) :
    B(std::move(m),std::move(dat), si,s,eval) {}
 
-  /*template<typename DataViewType> // anything from which the factory can make the data ...
-    gf(typename B::mesh_t const & m,
-    DataViewType && dat,
-    typename B::singularity_view_t const & si,
-    typename B::symmetry_t const & s ,
-    typename B::evaluator_t const & eval = typename B::evaluator_t ()
-    ) :
-    B(m,factory<typename B::data_t>(std::forward<DataViewType>(dat)),si,s,eval) {}
-    */
-
-  // ask the factory to build the elements of which gf is made 
-
   typedef typename factory::target_shape_t target_shape_t;
 
   gf(typename B::mesh_t m, target_shape_t shape = target_shape_t{} ):
@@ -451,26 +439,26 @@ namespace triqs { namespace gfs {
 
  //slice
  template<typename Variable, typename Target, typename Opt, bool V, typename... Args>
-  gf_view<Variable,matrix_valued,Opt> slice_target (gf_impl<Variable,Target,Opt,V> const & g, Args... args) {
+  gf_view<Variable,matrix_valued,Opt> slice_target (gf_impl<Variable,Target,Opt,V> const & g, Args&& ... args) {
    static_assert(std::is_same<Target,matrix_valued>::value, "slice_target only for matrix_valued GF's");
    using arrays::range;
    //auto sg=slice_target (g.singularity(),range(args,args+1)...);
-   return gf_view<Variable,matrix_valued,Opt>(g.mesh(), g.data()(range(), args... ),  slice_target (g.singularity(),args...) , g.symmetry());
+   return gf_view<Variable,matrix_valued,Opt>(g.mesh(), g.data()(range(), std::forward<Args>(args)... ), slice_target (g.singularity(), std::forward<Args>(args)...) , g.symmetry());
   }
 
  template<typename Variable, typename Target, typename Opt, bool V, typename... Args>
-  gf_view<Variable,scalar_valued,Opt> slice_target_to_scalar (gf_impl<Variable,Target,Opt,V> const & g, Args... args) {
+  gf_view<Variable,scalar_valued,Opt> slice_target_to_scalar (gf_impl<Variable,Target,Opt,V> const & g, Args&& ... args) {
    static_assert(std::is_same<Target,matrix_valued>::value, "slice_target only for matrix_valued GF's");
    using arrays::range;
    auto sg=slice_target (g.singularity(),range(args,args+1)...);
-   return gf_view<Variable,scalar_valued,Opt>(g.mesh(), g.data()(range(), args... ), sg, g.symmetry());
+   return gf_view<Variable,scalar_valued,Opt>(g.mesh(), g.data()(range(), std::forward<Args>(args)... ), sg, g.symmetry());
   }
 
  // a scalar_valued gf can be viewed as a 1x1 matrix
  template<typename Variable, typename Opt, bool V, typename... Args>
   gf_view<Variable,matrix_valued,Opt> reinterpret_scalar_valued_gf_as_matrix_valued (gf_impl<Variable,scalar_valued,Opt,V> const & g) {
-   typedef arrays::array_view<typename gfs_implementation::data_proxy<Variable,matrix_valued,Opt>::storage_t::value_type,3> a_t;
-   auto a = a_t {typename a_t::indexmap_type (arrays::mini_vector<size_t,3>(g.data().shape()[0],1,1)), g.data().storage()};
+   typedef typename gf_view<Variable,matrix_valued,Opt>::data_view_t a_t;
+   auto a = a_t {typename a_t::indexmap_type (join(g.data().shape(),make_shape(1,1))), g.data().storage()};
    return gf_view<Variable,matrix_valued,Opt>(g.mesh(), a, g.singularity(), g.symmetry());
   }
 

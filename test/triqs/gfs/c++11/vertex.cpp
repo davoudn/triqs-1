@@ -15,14 +15,12 @@ int main() {
  try { 
 
   double beta =10.0;
-  int n_im_freq=100;
-  //int n_im_freq=100;
+  int n_im_freq=10;
 
   auto m = gf_mesh<imfreq> {beta, Fermion, n_im_freq};
 
   auto vertex = gf_vertex_t { {m,m,m} };
  
-
   placeholder<0> w0_;
   placeholder<1> w1_;
   placeholder<2> w2_;
