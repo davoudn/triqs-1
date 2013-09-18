@@ -25,6 +25,7 @@
 #include "./local/tail.hpp"
 #include "./domains/matsubara.hpp"
 #include "./meshes/linear.hpp"
+#include "./evaluators.hpp"
 namespace triqs { namespace gfs {
 
  struct imfreq {};
@@ -51,19 +52,24 @@ namespace triqs { namespace gfs {
   template<typename Opt> struct h5_name<imfreq,matrix_valued,Opt>      { static std::string invoke(){ return "ImFreq";}};
 
   /// ---------------------------  evaluator ---------------------------------
+
+ template<> struct evaluator_fnt_on_mesh<imfreq> TRIQS_INHERIT_AND_FORWARD_CONSTRUCTOR(evaluator_fnt_on_mesh, evaluator_grid_simple);
+
   template<typename Opt, typename Target>
-   struct evaluator<imfreq,Target,Opt> {
-    static constexpr int arity = 1;
-     evaluator() = default;
-     evaluator(int n1, int n2){} 
-    typedef typename std::conditional < std::is_same<Target, matrix_valued>::value, arrays::matrix_view<std::complex<double>>, std::complex<double>>::type rtype; 
-    template<typename G>
-     rtype operator() (G const * g, long n)  const {return g->data()(n, arrays::ellipsis()); }
-    // crucial because the mesh_point is cast in a complex, not an int !
-    template<typename G>
-     rtype operator() (G const * g, linear_mesh<matsubara_domain<true>>::mesh_point_t const & p)  const { return (*this)(g,p.index());}
-    template<typename G>
-     local::tail_view operator()(G const * g, freq_infty const &) const {return g->singularity();}
+   struct evaluator<imfreq,Target,Opt> { // factorize and template on the long instead of double ?
+    public :
+     static constexpr int arity = 1;
+     template<typename G> 
+      auto operator()(G const * g, int n) 
+      //const DECL_AND_RETURN(g->data()(n, arrays::ellipsis()));
+      // hidden bug : should not need the ().... to investigate
+      const DECL_AND_RETURN((*g)[n]());
+     template<typename G>
+      auto operator() (G const * g, linear_mesh<matsubara_domain<true>>::mesh_point_t const & p)  
+      //const DECL_AND_RETURN(g->data()(p.index(), arrays::ellipsis()));
+const DECL_AND_RETURN((*g)[p.index()]());
+     template<typename G> 
+      typename G::singularity_t const & operator()(G const * g,freq_infty const &) const {return g->singularity();}
    };
 
   /// ---------------------------  data access  ---------------------------------

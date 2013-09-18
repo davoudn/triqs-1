@@ -288,6 +288,8 @@ namespace triqs { namespace gfs { namespace local {
     }
     return res;
   }
+  
+  inline tail inverse(tail const & t) { return inverse(tail_view(t));}
 
   inline tail mult_impl(tail_view const & l, tail_view const& r) {
     if (l.shape()[1] != r.shape()[0] || l.order_min() != r.order_min() || l.size() != r.size())

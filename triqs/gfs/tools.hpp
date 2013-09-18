@@ -38,8 +38,9 @@ namespace triqs { namespace gfs {
 
  namespace tag  { struct composite{}; struct mesh_point{};} 
  
- struct matrix_valued {};
  struct scalar_valued {};
+ struct matrix_valued {};
+ template<int R> struct tensor_valued { static_assert( R>2, "tensor_valued only for rank >2");};
  
  //------------------------------------------------------
 

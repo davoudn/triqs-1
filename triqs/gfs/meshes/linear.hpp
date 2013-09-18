@@ -191,7 +191,7 @@ namespace triqs { namespace gfs {
 
  /// Approximation of a point of the domain by a mesh point  
  template<typename D>
-  std::tuple<bool, size_t, double>  windowing ( linear_mesh<D> const & mesh, typename D::point_t const & x) { 
+  std::tuple<bool, size_t, double> windowing (linear_mesh<D> const & mesh, typename D::point_t const & x) { 
    double a = (x - mesh.x_min())/mesh.delta();
    long i = std::floor(a);
    bool in = (! ((i<0) || (i>long(mesh.size())-1)));

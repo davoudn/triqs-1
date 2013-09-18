@@ -44,23 +44,24 @@ namespace triqs { namespace gfs {
 
   /// ---------------------------  evaluator ---------------------------------
 
+  // Not finished, not tested
   template<typename Opt>
    struct evaluator<legendre,matrix_valued,Opt> {
     static constexpr int arity = 1;
     //ERROR : give a double and interpolate
     template<typename G>
      arrays::matrix_view<double >  operator() (G const * g,long n)  const {return g->data()(n, arrays::range(), arrays::range()); }
-    template<typename G>
-     local::tail_view operator()(G const * g,freq_infty const &) const {return g->singularity();}
    };
 
   /// ---------------------------  data access  ---------------------------------
 
   template<typename Opt> struct data_proxy<legendre,matrix_valued,Opt> : data_proxy_array<double,3> {};
+  template<typename Opt> struct data_proxy<legendre,scalar_valued,Opt> : data_proxy_array<double,1> {};
 
   // -------------------------------   Factories  --------------------------------------------------
 
   template<typename Opt> struct factories<legendre, matrix_valued,Opt>: factories_one_var<legendre,matrix_valued,Opt> {};
+  template<typename Opt> struct factories<legendre, scalar_valued,Opt>: factories_one_var<legendre,scalar_valued,Opt> {};
  } // gfs_implementation
 
 }}

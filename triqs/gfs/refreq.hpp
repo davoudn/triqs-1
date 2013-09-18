@@ -25,6 +25,7 @@
 #include "./local/tail.hpp"
 #include "./domains/R.hpp"
 #include "./meshes/linear.hpp"
+#include "./evaluators.hpp"
 
 namespace triqs { namespace gfs {
 
@@ -47,34 +48,21 @@ namespace triqs { namespace gfs {
   template<typename Opt> struct h5_name<refreq,matrix_valued,Opt>      { static std::string invoke(){ return "ReFreq";}};
 
   /// ---------------------------  evaluator ---------------------------------
-  template<typename Opt, typename Target>
-   struct evaluator<refreq,Target,Opt> {
-    static constexpr int arity = 1;
-    typedef typename std::conditional < std::is_same<Target, matrix_valued>::value, arrays::matrix<std::complex<double> >, std::complex<double>>::type rtype; 
-    evaluator() = default;
-     evaluator(int n1, int n2){} 
-     template<typename G>
-     rtype operator() (G const * g,double w0)  const {
-      //auto operator() (G const * g,double w0) const -> typename decltype ((*g)[0])::regular_type {
-      int n; double w; bool in;
-      std::tie(in, n, w) = windowing(g->mesh(),w0);
-      if (!in) TRIQS_RUNTIME_ERROR <<" Evaluation out of bounds";
-      auto gg = on_mesh(*g);
-      return (1-w) * gg(n) + w * gg(n+1);
-     }
-     template<typename G>
-      local::tail_view operator()(G const * g,freq_infty const &) const {return g->singularity();}
-     };
 
-    /// ---------------------------  data access  ---------------------------------
-    template<typename Opt> struct data_proxy<refreq,matrix_valued,Opt> : data_proxy_array<std::complex<double>,3> {};
-    template<typename Opt> struct data_proxy<refreq,scalar_valued,Opt> : data_proxy_array<std::complex<double>,1> {};
+  template<> struct evaluator_fnt_on_mesh<refreq> TRIQS_INHERIT_AND_FORWARD_CONSTRUCTOR(evaluator_fnt_on_mesh, evaluator_grid_linear_interpolation);
 
-    // -------------------------------   Factories  --------------------------------------------------
+  template<typename Opt, typename Target> struct evaluator<refreq,Target,Opt> : evaluator_one_var<refreq>{};
 
-    template<typename Opt> struct factories<refreq, matrix_valued,Opt>: factories_one_var<refreq,matrix_valued,Opt> {};
-    template<typename Opt> struct factories<refreq,scalar_valued,Opt> : factories_one_var<refreq,scalar_valued,Opt> {};
-   }
- }}
+
+  /// ---------------------------  data access  ---------------------------------
+  template<typename Opt> struct data_proxy<refreq,matrix_valued,Opt> : data_proxy_array<std::complex<double>,3> {};
+  template<typename Opt> struct data_proxy<refreq,scalar_valued,Opt> : data_proxy_array<std::complex<double>,1> {};
+
+  // -------------------------------   Factories  --------------------------------------------------
+
+  template<typename Opt> struct factories<refreq, matrix_valued,Opt>: factories_one_var<refreq,matrix_valued,Opt> {};
+  template<typename Opt> struct factories<refreq,scalar_valued,Opt> : factories_one_var<refreq,scalar_valued,Opt> {};
+ }
+}}
 #endif
 

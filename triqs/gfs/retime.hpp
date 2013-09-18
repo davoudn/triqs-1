@@ -25,6 +25,7 @@
 #include "./local/tail.hpp"
 #include "./domains/R.hpp"
 #include "./meshes/linear.hpp"
+#include "./evaluators.hpp"
 
 namespace triqs { namespace gfs {
 
@@ -46,24 +47,9 @@ namespace triqs { namespace gfs {
   template<typename Opt> struct h5_name<retime,matrix_valued,Opt>      { static std::string invoke(){ return  "ReTime";}};
 
   /// ---------------------------  evaluator ---------------------------------
-  template<typename Opt, typename Target>
-   struct evaluator<retime,Target,Opt> {
-    static constexpr int arity = 1;
-    evaluator() = default;
-     evaluator(int n1, int n2){} 
-     //typedef typename std::conditional < std::is_same<Target, matrix_valued>::value, arrays::matrix_view<std::complex<double>>, std::complex<double>>::type rtype; 
-    typedef typename std::conditional < std::is_same<Target, matrix_valued>::value, arrays::matrix<std::complex<double>>, std::complex<double>>::type rtype; 
-    template<typename G>
-     rtype operator() (G const * g,double t0)  const {
-      int n; double w; bool in;
-      std::tie(in, n, w) = windowing(g->mesh(),t0);
-      if (!in) TRIQS_RUNTIME_ERROR <<" Evaluation out of bounds";
-      auto gg = on_mesh(*g);
-      return (1-w) * gg(n) + w * gg(n+1);
-     }
-    template<typename G>
-     local::tail_view operator()(G const * g,freq_infty const &) const {return g->singularity();}
-   };
+ template<> struct evaluator_fnt_on_mesh<retime> TRIQS_INHERIT_AND_FORWARD_CONSTRUCTOR(evaluator_fnt_on_mesh, evaluator_grid_linear_interpolation);
+
+ template<typename Opt, typename Target> struct evaluator<retime,Target,Opt> : evaluator_one_var<retime>{};
 
   /// ---------------------------  data access  ---------------------------------
   template<typename Opt> struct data_proxy<retime,matrix_valued,Opt> : data_proxy_array<std::complex<double>,3> {};

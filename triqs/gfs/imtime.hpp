@@ -25,6 +25,7 @@
 #include "./local/tail.hpp"
 #include "./domains/matsubara.hpp"
 #include "./meshes/linear.hpp"
+#include "./evaluators.hpp"
 
 namespace triqs { namespace gfs {
 
@@ -68,61 +69,30 @@ namespace triqs { namespace gfs {
      }
    };
 
-
   /// ---------------------------  evaluator ---------------------------------
 
-  // NOT TESTED
-  // TEST THE SPPED when q_view are incorporated...
-  // true evaluator with interpolation ...
-  template<typename G, typename ReturnType>
-   ReturnType evaluator_imtime_impl (G const * g, double tau, ReturnType && _tmp) {
-    // interpolate between n and n+1, with weight
-    double beta = g->mesh().domain().beta;
-    int p = std::floor(tau/beta);
-    tau -= p*beta;
-    int n; double w; bool in;
-    std::tie(in, n, w) = windowing(g->mesh(),tau);
-    if (!in) TRIQS_RUNTIME_ERROR <<" Evaluation out of bounds";
-    auto gg = on_mesh(*g);
-    if ((g->mesh().domain().statistic == Fermion) && (p%2==1))
-     _tmp = - (1-w)*gg(n) - w*gg(n+1);
-    else
-     _tmp =   (1-w)*gg(n) + w*gg(n+1);
-    //else { // Speed test to redo when incoparated qview in main branch
-    // _tmp(0,0) =   w*g->data()(n, 0,0) + (1-w)*g->data()(n+1, 0,0);
-    // _tmp(0,1) =   w*g->data()(n, 0,1) + (1-w)*g->data()(n+1, 0,1);
-    // _tmp(1,0) =   w*g->data()(n, 1,0) + (1-w)*g->data()(n+1, 1,0);
-    // _tmp(1,1) =   w*g->data()(n, 1,1) + (1-w)*g->data()(n+1, 1,1);
-    // }
-    return _tmp;
-   }
+  // this one is specific because of the beta-antiperiodicity for fermions
+  template<>
+   struct  evaluator_fnt_on_mesh<imtime>  { 
+    double w1, w2; long n; 
 
-  template<typename Opt>
-   struct evaluator<imtime,matrix_valued,Opt> {
-    private:
-     mutable arrays::matrix<double> _tmp;
-    public :
-     static constexpr int arity = 1;
-     evaluator() = default;
-     evaluator(int n1, int n2) : _tmp(n1,n2) {} // WHAT happen in resize ??
+    evaluator_fnt_on_mesh() = default;
 
-     template<typename G>
-      arrays::matrix<double> const & operator()(G const * g, double tau) const { return evaluator_imtime_impl(g, tau, _tmp);}
+    evaluator_fnt_on_mesh (gf_mesh<imtime> const & m, double tau) {
+     double beta = m.domain().beta;
+     int p = std::floor(tau/beta);
+     tau -= p*beta;
+     double w; bool in;
+     std::tie(in, n, w) = windowing(m,tau);
+     if (!in) TRIQS_RUNTIME_ERROR <<" Evaluation out of bounds";
+     if ((m.domain().statistic == Fermion) && (p%2==1)) {w2 = -w; w1 = w-1;} else { w2 = w; w1 = 1-w;}
+    }
 
-     template<typename G>
-      typename G::singularity_t const & operator()(G const * g,freq_infty const &) const {return g->singularity();}
+    template<typename F> auto operator()(F const & f) const DECL_AND_RETURN(w1 * f(n) + w2 * f (n+1));
    };
 
-  template<typename Opt>
-   struct evaluator<imtime,scalar_valued,Opt> {
-    public :
-     static constexpr int arity = 1;
-
-     template<typename G> double operator()(G const * g, double tau) const { return evaluator_imtime_impl(g, tau, 0.0);}
-
-     template<typename G>
-      typename G::singularity_t const & operator()(G const * g,freq_infty const &) const {return g->singularity();}
-   };
+   // now evaluator
+   template<typename Opt, typename Target> struct evaluator<imtime,Target,Opt> : evaluator_one_var<imtime>{};
 
   // -------------------------------   Factories  --------------------------------------------------
 

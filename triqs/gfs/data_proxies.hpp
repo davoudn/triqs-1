@@ -27,7 +27,26 @@
 
 namespace triqs { namespace gfs {
 
- template<typename T, int R> struct data_proxy_array;
+ //---------------------------- generic case array of dim R----------------------------------
+ 
+ template<typename T, int R> struct data_proxy_array { 
+  /// The storage
+  typedef arrays::array<T,R>             storage_t;
+  typedef typename storage_t::view_type  storage_view_t;
+
+  /// The data access : a Weak view 
+  auto operator()(storage_t            & data, size_t i) const DECL_AND_RETURN(data(i,arrays::ellipsis()));
+  auto operator()(storage_t const      & data, size_t i) const DECL_AND_RETURN(data(i,arrays::ellipsis()));
+
+  auto operator()(storage_view_t       & data, size_t i) const DECL_AND_RETURN(data(i,arrays::ellipsis()));
+  auto operator()(storage_view_t const & data, size_t i) const DECL_AND_RETURN(data(i,arrays::ellipsis()));
+
+  template<typename S, typename RHS> static void assign_no_resize (S & data, RHS && rhs)           { data() = std::forward<RHS>(rhs);}
+  template<typename S, typename RHS> static void assign_to_scalar (S & data, RHS && rhs)           { data() = std::forward<RHS>(rhs);}
+  template<typename RHS>             static void assign_with_resize (storage_t & data, RHS && rhs) { data = std::forward<RHS>(rhs);}
+  template<typename RHS>             static void rebind (storage_view_t & data, RHS && rhs)        { data.rebind(rhs.data()); }
+ };
+
 
  //---------------------------- 3d array ----------------------------------
  

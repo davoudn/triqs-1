@@ -70,11 +70,25 @@ namespace triqs { namespace gfs {
   };
 
   // factories for one variable gf
-  template<typename Var, typename Target, typename Opt, int target_dim=2> struct factories_one_var;
+  template<typename Var, typename Target, typename Opt> struct factories_one_var;
 
-  template<typename Var, typename Opt, int target_dim> struct factories_one_var<Var,matrix_valued,Opt,target_dim> { 
+  template<int R, typename Var, typename Opt> struct factories_one_var<Var,tensor_valued<R>,Opt> { 
+   typedef gf<Var,tensor_valued<R>,Opt> gf_t;
+   typedef tqa::mini_vector<size_t,R> target_shape_t;
+   typedef typename gf_t::mesh_t mesh_t;
+
+   static typename gf_t::data_t make_data(mesh_t const & m, target_shape_t shape) { 
+    typename gf_t::data_t A(shape.front_append(m.size())); 
+    A() =0;
+    return A;
+   }
+
+   static typename gf_t::singularity_t make_singularity(mesh_t const & m, target_shape_t shape) { return {}; }
+  };
+ 
+   template<typename Var, typename Opt> struct factories_one_var<Var,matrix_valued,Opt> { 
    typedef gf<Var,matrix_valued,Opt> gf_t;
-   typedef tqa::mini_vector<size_t,target_dim> target_shape_t;
+   typedef tqa::mini_vector<size_t,2> target_shape_t;
    typedef typename gf_t::mesh_t mesh_t;
 
    static typename gf_t::data_t make_data(mesh_t const & m, target_shape_t shape) { 
@@ -84,10 +98,9 @@ namespace triqs { namespace gfs {
    }
 
    static typename gf_t::singularity_t make_singularity(mesh_t const & m, target_shape_t shape) { return shape; }
-   static evaluator<Var,matrix_valued,Opt> make_evaluator(mesh_t const & m, target_shape_t shape) { return {int(shape[0]),int(shape[1])}; }
   };
 
-  template<typename Var, typename Opt> struct factories_one_var<Var,scalar_valued,Opt,2> { 
+  template<typename Var, typename Opt> struct factories_one_var<Var,scalar_valued,Opt> { 
    typedef gf<Var,scalar_valued,Opt> gf_t;
    struct target_shape_t {};
    typedef typename gf_t::mesh_t mesh_t;
@@ -98,7 +111,6 @@ namespace triqs { namespace gfs {
     return A;
    }
    static typename gf_t::singularity_t make_singularity(mesh_t const & m, target_shape_t shape) { return typename gf_t::singularity_t {1,1} ; }
-   static evaluator<Var,scalar_valued,Opt> make_evaluator(mesh_t const & m, target_shape_t shape) { return {}; }
 
   };
 
@@ -349,7 +361,7 @@ namespace triqs { namespace gfs {
   typedef typename factory::target_shape_t target_shape_t;
 
   gf(typename B::mesh_t m, target_shape_t shape = target_shape_t{} ):
-   B(std::move(m), factory::make_data(m,shape), factory::make_singularity(m,shape), typename B::symmetry_t {}, factory::make_evaluator(m,shape)) {} 
+   B(std::move(m), factory::make_data(m,shape), factory::make_singularity(m,shape), typename B::symmetry_t {}, typename B::evaluator_t{}) {} 
 
   friend void swap (gf & a, gf & b) noexcept { a.swap_impl (b);}
 
