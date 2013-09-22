@@ -269,7 +269,9 @@ namespace triqs { namespace gfs {
     template<typename... Args>
      cr_type on_mesh (Args&&... args) const { return _data_proxy(_data,_mesh.index_to_linear(mesh_index_t(std::forward<Args>(args)...)));}
 
+#ifndef TRIQS_COMPILER_OBSOLETE_GCC    
    private:
+#endif
     struct _on_mesh_wrapper_const {
      gf_impl const & f; _on_mesh_wrapper_const (gf_impl const & _f) : f(_f) {}
      template <typename... Args> cr_type operator ()(Args && ... args) const { return f.on_mesh(std::forward<Args>(args)...);}
